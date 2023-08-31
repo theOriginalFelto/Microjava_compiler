@@ -74,7 +74,7 @@ nonterminal Addop, Mulop;
 
 Program ::= (Program) PROG ProgName:p VarDeclList LBRACE MethodDeclList RBRACE;
 
-ProgName ::= (ProgName) IDENT:pName;
+ProgName ::= (ProgName) IDENT:programName;
 
 
 VarDeclList ::= (VarDeclarations) VarDeclList VarDecl SEMI
@@ -88,7 +88,7 @@ VarDecl ::= (MultipleVarDecl) VarDecl COMMA MultVarDecl
 			|
 			(MultipleArrayDecl) VarDecl COMMA MultArrDecl
 			|
-			(VarDecl) Type:varType IDENT:varName
+			(VarDeclaration) Type:varType IDENT:varName
 			|
 			(ArrayDecl) Type:varType IDENT:varName LSQUARE RSQUARE
 			;
@@ -98,11 +98,12 @@ MultVarDecl ::= (MultVarDecl) IDENT:varName;
 MultArrDecl ::= (MultArrDecl) IDENT:varName LSQUARE RSQUARE;
 
 
-ConstDecl ::= (MultipleConstDecl) CONST MultipleConstDecl;
+ConstDecl ::= (MultipleConstDeclList) CONST MultipleConstDecl;
 
 MultipleConstDecl ::= (MultipleConstDeclarations) MultipleConstDecl COMMA IDENT:constVarName EQUAL ConstValue
 					|
 					(ConstDeclaration) Type:constVarType IDENT:constVarName EQUAL ConstValue
+					;
 
 ConstValue ::= (ConstNumber) NUMBER
 				|
@@ -120,13 +121,13 @@ MethodDeclList ::= (MethodDeclarations) MethodDeclList MethodDecl
 					(NoMethodDecl)/* epsilon */
 					;
 
-MethodDecl ::= (MethodDecl) MethodType IDENT:methName
+MethodDecl ::= (MethodDeclaration) MethodType IDENT:methName
 			   LPAREN FormPars RPAREN VarDeclList LBRACE StatementList RBRACE 
 			   ;
 
-MethodType ::= (MethodType) Type:retType
+MethodType ::= (MethodTypeDecl) Type:retType
 				|
-				(VoidType) VOID
+				(MethodVoidTypeDecl) VOID
 				;
 
 FormPars ::= (FormParams) FormalParamList 
@@ -150,7 +151,7 @@ StatementList ::= (Statements) StatementList Statement
 				  (NoStmt) /* epsilon */
 				  ;
 
-Statement ::= (DesignatorStatement) DesignatorStatement SEMI 
+Statement ::= (DesigStatement) DesignatorStatement SEMI 
 			  |
 			  (ErrorStatement) error SEMI
 			  {: parser.log.debug("Uspesan oporavak od greske pri dodeli vrednosti."); :}
@@ -177,7 +178,7 @@ DesignatorStatement ::= (AssignStatement) Designator:lvalue EQUAL Expr:rvalue
 			  
 Designator ::= (DesignatorArray) Designator LSQUARE Expr:expr RSQUARE
 				|
-				(Designator) IDENT:var
+				(DesignatorVar) IDENT:var
 				;
 
 			  
