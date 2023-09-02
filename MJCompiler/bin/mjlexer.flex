@@ -45,6 +45,7 @@ import java_cup.runtime.Symbol;
 "const"     { return new_symbol(sym.CONST, yytext()); }
 "true"      { return new_symbol(sym.BOOLEANCONST, Boolean.valueOf(yytext())); }
 "false"     { return new_symbol(sym.BOOLEANCONST, Boolean.valueOf(yytext())); }
+"findAny"	{ return new_symbol(sym.FINDANY, yytext()); }
 "+" 		{ return new_symbol(sym.PLUS, yytext()); }
 "++" 		{ return new_symbol(sym.PLUSPLUS, yytext()); }
 "-" 		{ return new_symbol(sym.MINUS, yytext()); }

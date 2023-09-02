@@ -1,5 +1,6 @@
 program MJProgram
 	int x; int y;
+	const int n = 10;
 {
 	
 	int k () int c; {
@@ -10,7 +11,7 @@ program MJProgram
 	int main() {
 		y = 2;
 		x = y + 2;
-		y = k() + 3;
+		y = x + 3 - n;
 		print(y);
 		return 0;
 	}

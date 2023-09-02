@@ -9,7 +9,7 @@ import rs.ac.bg.etf.pp1.ast.*;
 
 parser code {:
 	
-	boolean errorDetected = false;
+	boolean errorDetected;
 	
 	Logger log = Logger.getLogger(getClass());
    
@@ -46,6 +46,10 @@ parser code {:
     
 :}
 
+init with {: 
+	errorDetected = false;
+:}
+
 scan with {:
 	Symbol s = this.getScanner().next_token();
 	if (s != null && s.value != null) 
@@ -56,32 +60,40 @@ scan with {:
 
 terminal PROG, VOID, PRINT, READ, RETURN, NEW, CONST;
 terminal PLUS, PLUSPLUS, MINUS, MINUSMINUS, EQUAL, MUL, DIV, MOD;
-terminal DOT, SEMI, COMMA;
+terminal DOT, SEMI, COMMA, FINDANY;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LSQUARE, RSQUARE;
 terminal Boolean BOOLEANCONST;
 terminal Integer NUMBER;
 terminal String IDENT;
 terminal Character CHARCONST;
 
-nonterminal Program, ProgName, VarDeclList, MethodDeclList, VarDecl, ConstDecl;
-nonterminal MultVarDecl, MultArrDecl, MultipleConstDecl, ConstValue;
-nonterminal MethodDecl, MethodType; 
-nonterminal Designator, Type, Term, Expr, Factor;
+nonterminal VarDeclList, MethodDeclList, VarDecl, VarDeclSemi, ConstDecl;
+nonterminal MultVarDecl, MultArrDecl, MultipleConstDecl;
 
-nonterminal FormPars, FormalParamList, FormalParamDecl, ActualPars, ActualParamList; 
+nonterminal FormPars, FormalParamList, FormalParamDecl;
+//nonterminal ActualPars, ActualParamList; 
 nonterminal StatementList, Statement, DesignatorStatement;
 nonterminal Addop, Mulop;
+
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgName, MethodDecl, MethodTypeName, Designator;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, ConstValue;
 
 Program ::= (Program) PROG ProgName:p VarDeclList LBRACE MethodDeclList RBRACE;
 
 ProgName ::= (ProgName) IDENT:programName;
 
 
-VarDeclList ::= (VarDeclarations) VarDeclList VarDecl SEMI
+VarDeclList ::= (VarDeclarations) VarDeclList VarDeclSemi
 				|
 				(ConstDeclarations) VarDeclList ConstDecl SEMI
 				|
 				(NoVarDecl)/* epsilon */ 
+				;
+				
+VarDeclSemi ::= (VarDeclarationWithSemi) VarDecl SEMI
+				|
+				(VarDeclError) error SEMI:safe
+				{: parser.report_error("Greska pri deklarisanju globalnih promjenljivih. Izvrsen oporavak do ; u liniji " + safeleft, null); :}
 				;
 
 VarDecl ::= (MultipleVarDecl) VarDecl COMMA MultVarDecl
@@ -121,13 +133,13 @@ MethodDeclList ::= (MethodDeclarations) MethodDeclList MethodDecl
 					(NoMethodDecl)/* epsilon */
 					;
 
-MethodDecl ::= (MethodDeclaration) MethodType IDENT:methName
+MethodDecl ::= (MethodDeclaration) MethodTypeName
 			   LPAREN FormPars RPAREN VarDeclList LBRACE StatementList RBRACE 
 			   ;
 
-MethodType ::= (MethodTypeDecl) Type:retType
+MethodTypeName ::= (MethodTypeDecl) Type:retType IDENT:methName
 				|
-				(MethodVoidTypeDecl) VOID
+				(MethodVoidTypeDecl) VOID IDENT:methName
 				;
 
 FormPars ::= (FormParams) FormalParamList 
@@ -153,8 +165,8 @@ StatementList ::= (Statements) StatementList Statement
 
 Statement ::= (DesigStatement) DesignatorStatement SEMI 
 			  |
-			  (ErrorStatement) error SEMI
-			  {: parser.log.debug("Uspesan oporavak od greske pri dodeli vrednosti."); :}
+			  (ErrorStatement) error SEMI:safe
+			  {: parser.report_error("Greska kod iskaza dodjele. Izvrsen oporavak do ; u liniji " + safeleft, null); :}
 			  |
 			  (PrintStatement) PRINT LPAREN Expr RPAREN SEMI 
 			  |
@@ -162,9 +174,11 @@ Statement ::= (DesigStatement) DesignatorStatement SEMI
 			  |
 			  (ReadStatement) READ LPAREN Designator:designator RPAREN SEMI 
 			  |
-			  (ReturnExpression) RETURN Expr:expr SEMI
+			  (ReturnExprStatement) RETURN Expr:expr SEMI
 			  |
-			  (ReturnNoExpression) RETURN SEMI
+			  (ReturnNoExprStatement) RETURN SEMI
+			  |
+			  (FindAnyStatement) Designator:boolVar EQUAL Designator:array DOT FINDANY LPAREN Expr:expr RPAREN SEMI
 			  ;
 			  
 DesignatorStatement ::= (AssignStatement) Designator:lvalue EQUAL Expr:rvalue
@@ -172,8 +186,8 @@ DesignatorStatement ::= (AssignStatement) Designator:lvalue EQUAL Expr:rvalue
 						(IncrementStatement) Designator:lvalue PLUSPLUS
 						|
 						(DecrementStatement) Designator:lvalue MINUSMINUS
-						|
-						(FuntionCall) Designator:function LPAREN ActualPars RPAREN SEMI
+//						|
+//						(FuntionCall) Designator:function LPAREN ActualPars RPAREN SEMI
 						;
 			  
 Designator ::= (DesignatorArray) Designator LSQUARE Expr:expr RSQUARE
@@ -194,26 +208,26 @@ Term ::= (MulTerm) Term:term Mulop Factor:factor
 			(FactorTerm) Factor:factor
 			;
 
-Factor ::= (Const) ConstValue
+Factor ::= (FactorConst) ConstValue:val
 			|
-		   (Var) Designator:var
-		    |
-		   (FuncCall) Designator:func LPAREN ActualPars RPAREN
+//		   (FactorFuncCall) Designator:func LPAREN ActualPars RPAREN
+//		   |
+		   (FactorVar) Designator:var
 		   |
-		   (NewArray) NEW Type:type LSQUARE Expr:expr RSQUARE
+		   (FactorNewArray) NEW Type:type LSQUARE Expr:expr RSQUARE
 		   |
-		   (Parenthesis) LPAREN Expr:e RPAREN
+		   (FactorParenthesisExpression) LPAREN Expr:expr RPAREN
 		   ;
 
-ActualPars ::= (Actuals) ActualParamList 
-				| 
-			   (NoActuals) /* epsilon */ 
-			   ;
+//ActualPars ::= (Actuals) ActualParamList 
+//				| 
+//			   (NoActuals) /* epsilon */ 
+//			   ;
 			   
-ActualParamList ::= (ActualParams) ActualParamList COMMA Expr
-					|
-					(ActualParam) Expr
-					;
+//ActualParamList ::= (ActualParams) ActualParamList COMMA Expr
+//					|
+//					(ActualParam) Expr
+//					;
 					
 
 Addop ::= (PlusOperator) PLUS
