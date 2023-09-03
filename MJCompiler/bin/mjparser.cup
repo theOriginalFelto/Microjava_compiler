@@ -67,8 +67,7 @@ terminal Integer NUMBER;
 terminal String IDENT;
 terminal Character CHARCONST;
 
-nonterminal VarDeclList, MethodDeclList, VarDecl, VarDeclSemi, ConstDecl;
-nonterminal MultVarDecl, MultArrDecl, MultipleConstDecl;
+nonterminal VarDeclList, MethodDeclList, ConstDecl, MultipleConstDecl;
 
 nonterminal FormPars, FormalParamList, FormalParamDecl;
 //nonterminal ActualPars, ActualParamList; 
@@ -77,6 +76,7 @@ nonterminal Addop, Mulop;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgName, MethodDecl, MethodTypeName, Designator;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, ConstValue;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct VarDeclSemi, VarDecl, MultVarDecl, MultArrDecl;
 
 Program ::= (Program) PROG ProgName:p VarDeclList LBRACE MethodDeclList RBRACE;
 

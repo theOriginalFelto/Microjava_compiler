@@ -1,6 +1,12 @@
 program MJProgram
 	int x; int y;
-	const int n = 10;
+	int a[];
+	char b; char c[];
+	bool is, isnt;
+	bool arr[];
+	const int negint = -3, posint = 3;
+	const bool garg = false;
+	const char vm = 'a', vn = 'b';
 {
 	
 	int k () int c; {
@@ -11,7 +17,7 @@ program MJProgram
 	int main() {
 		y = 2;
 		x = y + 2;
-		y = x + 3 - n;
+		y = x + 3;
 		print(y);
 		return 0;
 	}
