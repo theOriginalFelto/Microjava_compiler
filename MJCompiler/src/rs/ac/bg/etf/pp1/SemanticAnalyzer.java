@@ -72,35 +72,51 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	public void visit(VarDeclaration varDeclaration){
 		varDeclarationCount++;
+		currentDeclaredType = varDeclaration.getType();
 		
 		if (symbolExistsInCurrentScope(varDeclaration.getVarName(), varDeclaration.getLine()))
 			return;
 		
-		//TODO uradi provjeru da li je tip NoType za svaku deklaraciju promjenljive
+		if (varDeclaration.getType().struct == MyTab.noType) {
+			report_error("Greska pri deklarisanju promjenljive " + varDeclaration.getVarName() + 
+					" na liniji " + varDeclaration.getLine() + ". " + 
+					varDeclaration.getType().getTypeName() + " nije podrzan tip!", null);
+			return;
+		}
 		
 		report_info("Desklarisana promjenljiva '" + varDeclaration.getVarName() + 
 				"' tipa " + varDeclaration.getType().getTypeName(), varDeclaration);
 		Obj varNode = MyTab.insert(Obj.Var, varDeclaration.getVarName(), varDeclaration.getType().struct);
-		// TODO vidi ovo jos
 		varDeclaration.struct = varDeclaration.getType().struct;
-		currentDeclaredType = varDeclaration.getType();
 	}
 	
 	public void visit(ArrayDecl arrayDecl) {
+		currentDeclaredType = arrayDecl.getType();
+		
 		if (symbolExistsInCurrentScope(arrayDecl.getVarName(), arrayDecl.getLine()))
 			return;
+		if (arrayDecl.getType().struct == MyTab.noType) {
+			report_error("Greska pri deklarisanju niza " + arrayDecl.getVarName() + 
+					" na liniji " + arrayDecl.getLine() + ". " + 
+					arrayDecl.getType().getTypeName() + " nije podrzan tip!", null);
+			return;
+		}
 		
 		arrayDecl.struct = new Struct(Struct.Array, arrayDecl.getType().struct);
 		report_info("Desklarisan niz '" + arrayDecl.getVarName() + 
 				"' tipa " + arrayDecl.getType().getTypeName(), arrayDecl);
 		Obj arrNode = MyTab.insert(Obj.Var, arrayDecl.getVarName(), arrayDecl.struct);
-		// TODO vidi ovo jos
-		currentDeclaredType = arrayDecl.getType();
 	}
     
     public void visit(MultVarDecl multVarDecl) {
     	if (symbolExistsInCurrentScope(multVarDecl.getVarName(), multVarDecl.getLine()))
 			return;
+    	if (currentDeclaredType.struct == MyTab.noType) {
+			report_error("Greska pri deklarisanju promjenljive " + multVarDecl.getVarName() + 
+					" na liniji " + multVarDecl.getLine() + ". " + 
+					currentDeclaredType.getTypeName() + " nije podrzan tip!", null);
+			return;
+		}
 		
 		report_info("Desklarisana promjenljiva '" + multVarDecl.getVarName() + 
 				"' tipa " + currentDeclaredType.getTypeName(), multVarDecl);
@@ -110,6 +126,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     public void visit(MultArrDecl multArrDecl) {
     	if (symbolExistsInCurrentScope(multArrDecl.getVarName(), multArrDecl.getLine()))
     		return;
+    	if (currentDeclaredType.struct == MyTab.noType) {
+			report_error("Greska pri deklarisanju niza " + multArrDecl.getVarName() + 
+					" na liniji " + multArrDecl.getLine() + ". " + 
+					currentDeclaredType.getTypeName() + " nije podrzan tip!", null);
+			return;
+		}
     	
     	multArrDecl.struct = new Struct(Struct.Array, currentDeclaredType.struct);
     	report_info("Desklarisan niz '" + multArrDecl.getVarName() + 
