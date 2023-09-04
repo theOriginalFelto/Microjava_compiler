@@ -92,7 +92,10 @@ VarDeclList ::= (VarDeclarations) VarDeclList VarDeclSemi
 				
 VarDeclSemi ::= (VarDeclarationWithSemi) VarDecl SEMI
 				|
-				(VarDeclError) error SEMI:safe
+				(VarDeclErrorComma) error COMMA:safe
+				{: parser.report_error("Greska pri deklarisanju globalnih promjenljivih. Izvrsen oporavak do , u liniji " + safeleft, null); :}
+				|
+				(VarDeclErrorSemi) error SEMI:safe
 				{: parser.report_error("Greska pri deklarisanju globalnih promjenljivih. Izvrsen oporavak do ; u liniji " + safeleft, null); :}
 				;
 

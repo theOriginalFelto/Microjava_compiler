@@ -76,6 +76,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (symbolExistsInCurrentScope(varDeclaration.getVarName(), varDeclaration.getLine()))
 			return;
 		
+		//TODO uradi provjeru da li je tip NoType za svaku deklaraciju promjenljive
+		
 		report_info("Desklarisana promjenljiva '" + varDeclaration.getVarName() + 
 				"' tipa " + varDeclaration.getType().getTypeName(), varDeclaration);
 		Obj varNode = MyTab.insert(Obj.Var, varDeclaration.getVarName(), varDeclaration.getType().struct);
@@ -135,7 +137,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     		return;
     	
     	if (!currentDeclaredConstTypeName.equals(currentDeclaredType.getTypeName())) {
-    		report_error("Sintaksna greska na liniji " + constDeclaration.getLine() + 
+    		report_error("Semanticka greska na liniji " + constDeclaration.getLine() + 
     				": tip vrijednosti konstante se ne poklapa sa deklarisanim tipom!", null);
     		return;
     	}
@@ -156,7 +158,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			return;
     	
     	if (!currentDeclaredConstTypeName.equals(constDeclaration.getType().getTypeName())) {
-    		report_error("Sintaksna greska na liniji " + constDeclaration.getLine() + 
+    		report_error("Semanticka greska na liniji " + constDeclaration.getLine() + 
     				": tip vrijednosti konstante se ne poklapa sa deklarisanim tipom!", null);
     		return;
     	}

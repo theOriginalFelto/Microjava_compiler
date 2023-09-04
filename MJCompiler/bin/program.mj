@@ -1,5 +1,7 @@
 program MJProgram
-	int x; int y;
+	int x, y;
+	ingt gfd;
+	inft gfs, zgh;
 	int a[];
 	char b; char c[];
 	bool is, isnt;
@@ -7,6 +9,7 @@ program MJProgram
 	const int negint = -3, posint = 3;
 	const bool garg = false;
 	const char vm = 'a', vn = 'b';
+	const int const = 5;
 {
 	
 	int k () int c; {
@@ -14,7 +17,7 @@ program MJProgram
 		return c+2;
 	}
 	
-	int main() {
+	void main() {
 		y = 2;
 		x = y + 2;
 		y = x + 3;
