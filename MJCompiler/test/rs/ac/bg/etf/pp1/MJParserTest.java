@@ -27,7 +27,7 @@ public class MJParserTest {
 		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/program.mj");
+			File sourceCode = new File("test/test301.mj");
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));
@@ -43,19 +43,22 @@ public class MJParserTest {
 			log.info("===================================");
 
 			// ispis prepoznatih programskih konstrukcija
-			SemanticAnalyzer v = new SemanticAnalyzer();
-			prog.traverseBottomUp(v); 
+			SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer();
+			prog.traverseBottomUp(semanticAnalyzer); 
 	      
-			log.info(" Print count calls = " + v.printCallCount);
-
-			log.info(" Deklarisanih promenljivih ima = " + v.varDeclarationCount);
+//			log.info(" Print count calls = " + v.printCallCount);
+//
+//			log.info(" Deklarisanih promenljivih ima = " + v.varDeclarationCount);
 			log.info("=========================================");
 			MyTab.dump();
 			
-			if (!p.errorDetected && v.passed()) {
+			if (!p.errorDetected && semanticAnalyzer.passed()) {
 				log.info("Parsiranje uspjesno zavrseno!");
 			} else {
-				log.error("Parsiranje NIJE uspjesno zavrseno!");
+				if (!semanticAnalyzer.mainMethodFound)
+					log.error("Parsiranje NIJE uspjesno zavrseno! Ne postoji main metoda.");
+				else
+					log.error("Parsiranje NIJE uspjesno zavrseno! Broj semantickih gresaka: " + semanticAnalyzer.errorsDetected);
 			}
 		} 
 		finally {

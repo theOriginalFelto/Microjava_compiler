@@ -190,7 +190,7 @@ DesignatorStatement ::= (AssignStatement) Designator:lvalue EQUAL Expr:rvalue
 //						(FuntionCall) Designator:function LPAREN ActualPars RPAREN SEMI
 						;
 			  
-Designator ::= (DesignatorArray) Designator LSQUARE Expr:expr RSQUARE
+Designator ::= (DesignatorArray) IDENT:var LSQUARE Expr:expr RSQUARE
 				|
 				(DesignatorVar) IDENT:var
 				;

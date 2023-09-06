@@ -3,13 +3,14 @@ package rs.ac.bg.etf.pp1;
 import org.apache.log4j.Logger;
 
 import rs.ac.bg.etf.pp1.ast.*;
-import rs.etf.pp1.symboltable.Tab;
 import rs.etf.pp1.symboltable.concepts.*;
 
 public class SemanticAnalyzer extends VisitorAdaptor {
 	int printCallCount = 0;
 	int varDeclarationCount = 0;
-	boolean returnFound = false, errorDetected = false;
+	int errorsDetected = 0;
+	boolean returnFound = false, mainMethodFound = false;
+	boolean newArrayCreation = false, arrayUsedInsteadOfVar = false;
 	int numberOfVars;
 	
 	int numberConstValue, boolConstValue;
@@ -17,12 +18,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	Obj currentMethod = null;
 	Type currentDeclaredType = null;
-	String currentDeclaredConstTypeName = null;
+	String currentConstValueTypeName = null;
 	
 	Logger log = Logger.getLogger(getClass());
+
+	public boolean passed() { return errorsDetected == 0 && mainMethodFound; }
 	
 	public void report_error(String message, SyntaxNode info) {
-		errorDetected = true;
+		errorsDetected++;
 		StringBuilder msg = new StringBuilder(message);
 		int line = (info == null) ? 0: info.getLine();
 		if (line != 0)
@@ -48,8 +51,10 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		return false;
 	}
 	
-    public void visit(PrintStatement print) {
-		printCallCount++;
+	public boolean isMainMethod() {
+		if (currentMethod.getType() == MyTab.noType && currentMethod.getName().equals("main")) 
+			return true;
+		return false;
 	}
     
     public void visit(Program program) {
@@ -158,43 +163,43 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     	if (symbolExistsInCurrentScope(constDeclaration.getConstVarName(), constDeclaration.getLine()))
     		return;
     	
-    	if (!currentDeclaredConstTypeName.equals(currentDeclaredType.getTypeName())) {
+    	if (!currentConstValueTypeName.equals(currentDeclaredType.getTypeName())) {
     		report_error("Semanticka greska na liniji " + constDeclaration.getLine() + 
-    				": tip vrijednosti konstante se ne poklapa sa deklarisanim tipom!", null);
+    				": literal se ne poklapa sa tipom konstante " + constDeclaration.getConstVarName(), null);
     		return;
     	}
     	
     	report_info("Desklarisana konstanta '" + constDeclaration.getConstVarName() + 
     			"' tipa " + currentDeclaredType.getTypeName(), constDeclaration);
-    	Obj constNode = MyTab.insert(Obj.Var, constDeclaration.getConstVarName(), currentDeclaredType.struct);
-    	if (currentDeclaredConstTypeName == "int")
+    	Obj constNode = MyTab.insert(Obj.Con, constDeclaration.getConstVarName(), currentDeclaredType.struct);
+    	if (currentConstValueTypeName == "int")
     		constNode.setAdr(numberConstValue);
-    	else if (currentDeclaredConstTypeName == "char")
+    	else if (currentConstValueTypeName == "char")
     		constNode.setAdr(charConstValue);
     	else
     		constNode.setAdr(boolConstValue);
     }
     
     public void visit(ConstDeclaration constDeclaration) {
+    	currentDeclaredType = constDeclaration.getType();
     	if (symbolExistsInCurrentScope(constDeclaration.getConstVarName(), constDeclaration.getLine()))
 			return;
     	
-    	if (!currentDeclaredConstTypeName.equals(constDeclaration.getType().getTypeName())) {
+    	if (!currentConstValueTypeName.equals(currentDeclaredType.getTypeName())) {
     		report_error("Semanticka greska na liniji " + constDeclaration.getLine() + 
-    				": tip vrijednosti konstante se ne poklapa sa deklarisanim tipom!", null);
+    				": literal se ne poklapa sa tipom konstante " + constDeclaration.getConstVarName(), null);
     		return;
     	}
 		
 		report_info("Desklarisana konstanta '" + constDeclaration.getConstVarName() + 
-				"' tipa " + constDeclaration.getType().getTypeName(), constDeclaration);
-		Obj constNode = MyTab.insert(Obj.Var, constDeclaration.getConstVarName(), constDeclaration.getType().struct);
-		if (currentDeclaredConstTypeName == "int")
+				"' tipa " + currentDeclaredType.getTypeName(), constDeclaration);
+		Obj constNode = MyTab.insert(Obj.Con, constDeclaration.getConstVarName(), currentDeclaredType.struct);
+		if (currentConstValueTypeName == "int")
     		constNode.setAdr(numberConstValue);
-    	else if (currentDeclaredConstTypeName == "char")
+    	else if (currentConstValueTypeName == "char")
     		constNode.setAdr(charConstValue);
     	else
     		constNode.setAdr(boolConstValue);
-		currentDeclaredType = constDeclaration.getType();
     }
     
     public void visit(MethodVoidTypeDecl methodVoidTypeDecl) {
@@ -216,6 +221,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("Semanticka greska na liniji " + methodDeclaration.getLine() + 
 					": funkcija " + currentMethod.getName() + " nema return iskaz!", null);
 		}
+    	mainMethodFound = mainMethodFound || isMainMethod();
     	MyTab.chainLocalSymbols(currentMethod);
     	MyTab.closeScope();
     	
@@ -223,13 +229,63 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     	currentMethod = null;
     }
     
-    public void visit(DesignatorVar designatorVar) {
-    	Obj obj = MyTab.find(designatorVar.getVar());
-    	if (obj == MyTab.noObj) { 
-			report_error("Greska na liniji " + designatorVar.getLine()+ " : ime " + designatorVar.getVar()+" nije deklarisano! ", null);
+    public void visit(FormalVarDecl formalVarDecl) {
+    	if (isMainMethod()) {
+    		report_error("Greska na liniji " + formalVarDecl.getLine() + ": main metoda ne sme imati formalne parametre!", null);
+    		return;
+    	}
+    	if (symbolExistsInCurrentScope(formalVarDecl.getVarName(), formalVarDecl.getLine()))
+			return;
+    	if (formalVarDecl.getType().struct == MyTab.noType) {
+			report_error("Greska pri deklarisanju formalnog parametra " + formalVarDecl.getVarName() + 
+					" na liniji " + formalVarDecl.getLine() + ". " + 
+					formalVarDecl.getType().getTypeName() + " nije podrzan tip!", null);
+			return;
 		}
-    	designatorVar.obj = obj;
+		
+		report_info("Desklarisan formalni parametar '" + formalVarDecl.getVarName() + 
+				"' tipa " + formalVarDecl.getType().getTypeName() + " za metodu " + currentMethod.getName(), formalVarDecl);
+		Obj varNode = MyTab.insert(Obj.Var, formalVarDecl.getVarName(), formalVarDecl.getType().struct);
     }
+    
+    public void visit(FormalArrDecl formalArrDecl) {
+    	if (isMainMethod()) {
+    		report_error("Greska na liniji " + formalArrDecl.getLine() + ": main metoda ne sme imati formalne parametre!", null);
+    		return;
+    	}
+    	if (symbolExistsInCurrentScope(formalArrDecl.getVarName(), formalArrDecl.getLine()))
+			return;
+    	if (formalArrDecl.getType().struct == MyTab.noType) {
+			report_error("Greska pri deklarisanju formalnog parametra " + formalArrDecl.getVarName() + 
+					" na liniji " + formalArrDecl.getLine() + ". " + 
+					formalArrDecl.getType().getTypeName() + " nije podrzan tip!", null);
+			return;
+		}
+    	
+		report_info("Desklarisan formalni parametar '" + formalArrDecl.getVarName() + 
+				"' tipa niza " + formalArrDecl.getType().getTypeName() + " za metodu " + currentMethod.getName(), formalArrDecl);
+		Obj varNode = MyTab.insert(Obj.Var, formalArrDecl.getVarName(), new Struct(Struct.Array, formalArrDecl.getType().struct));
+    }
+
+	public void visit(ReturnExprStatement returnExprStatement) {
+		returnFound = true;
+		Struct currentMethType = currentMethod.getType();
+		if (!currentMethType.compatibleWith(returnExprStatement.getExpr().struct)) {
+			report_error("Greska na liniji " + returnExprStatement.getLine() + ": " + 
+					"tip izraza u return naredbi ne slaze se sa tipom povratne vrednosti funkcije " + currentMethod.getName(), null);
+		}	
+	}
+	
+	public void visit(ReturnNoExprStatement returnNoExprStatement) {
+		returnFound = true;
+		Struct currentMethType = currentMethod.getType();
+		if (!currentMethType.equals(MyTab.noType)) {
+			report_error("Greska na liniji " + returnNoExprStatement.getLine() + ": u metodi " + 
+					currentMethod.getName() + " ne smije biti return iskaz bez izraza tipa " + currentMethod.getType(), null);
+		}	
+	}
+	
+	
     
     public void visit(AddExpr addExpr) {
 		Struct te = addExpr.getExpr().struct;
@@ -237,7 +293,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (te.equals(t) && te == MyTab.intType)
 			addExpr.struct = te;
 		else {
-			report_error("Greska na liniji "+ addExpr.getLine()+" : nekompatibilni tipovi u izrazu za sabiranje.", null);
+			report_error("Greska na liniji " + addExpr.getLine() + ": nekompatibilni tipovi u izrazu za sabiranje.", null);
 			addExpr.struct = MyTab.noType;
 		} 
 	}
@@ -248,6 +304,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	public void visit(TermExprMinus termExpr) {
 		termExpr.struct = termExpr.getTerm().struct;
+		if (termExpr.getTerm().struct != MyTab.intType)
+			report_error("Greska: negira se stavka koja nije tipa int", termExpr);
 	}
 
 	public void visit(MulTerm mulTerm) {
@@ -256,7 +314,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (te.equals(t) && te == MyTab.intType)
 			mulTerm.struct = te;
 		else {
-			report_error("Greska na liniji "+ mulTerm.getLine()+" : nekompatibilni tipovi u izrazu za mnozenje/dijeljenje.", null);
+			report_error("Greska na liniji " + mulTerm.getLine() + ": nekompatibilni tipovi u izrazu za mnozenje/dijeljenje.", null);
 			mulTerm.struct = MyTab.noType;
 		}    	
 	}
@@ -272,27 +330,34 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(ConstNumber cnst){
 		cnst.struct = MyTab.intType;
 		numberConstValue = cnst.getN1();
-		currentDeclaredConstTypeName = "int";
+		currentConstValueTypeName = "int";
 	}
 	
 	public void visit(ConstBoolean cnst){
 		cnst.struct = MyTab.boolType;
 		boolConstValue = cnst.getB1() ? 1 : 0;
-		currentDeclaredConstTypeName = "bool";
+		currentConstValueTypeName = "bool";
 	}
 	
 	public void visit(ConstChar cnst){
 		cnst.struct = MyTab.charType;
 		charConstValue = cnst.getC1();
-		currentDeclaredConstTypeName = "char";
+		currentConstValueTypeName = "char";
 	}
 	
 	public void visit(FactorVar factorVar) {
-		factorVar.struct = factorVar.getDesignator().obj.getType();
+		Struct designatorType = factorVar.getDesignator().obj.getType();
+		if (designatorType.getKind() == Struct.Array)
+			factorVar.struct = designatorType.getElemType();
+		else
+			factorVar.struct = designatorType;
 	}
 	
 	public void visit(FactorNewArray factorNewArray) {
 		factorNewArray.struct = new Struct(Struct.Array, factorNewArray.getType().struct);
+		if (factorNewArray.getExpr().struct != MyTab.intType)
+			report_error("Greska: izraz za duzinu niza pri kreiranju mora biti tipa int", factorNewArray);
+		newArrayCreation = true;
 	}
 	
 	public void visit(FactorParenthesisExpression factorParenthesisExpression) {
@@ -300,24 +365,104 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	
-	public void visit(ReturnExprStatement returnExprStatement) {
-		returnFound = true;
-		Struct currentMethType = currentMethod.getType();
-		if (!currentMethType.compatibleWith(returnExprStatement.getExpr().struct)) {
-			report_error("Greska na liniji " + returnExprStatement.getLine() + " : " + 
-					"tip izraza u return naredbi ne slaze se sa tipom povratne vrednosti funkcije " + currentMethod.getName(), null);
-		}	
-	}
-	
 	
 	public void visit(AssignStatement assignStatement) {
-		if (!assignStatement.getExpr().struct.assignableTo(assignStatement.getDesignator().obj.getType())) {
-			report_error("Greska na liniji " + assignStatement.getLine() + " : " + " nekompatibilni tipovi u dodeli vrednosti ", null);
+		Struct designatorType = assignStatement.getDesignator().obj.getType();
+		if (newArrayCreation) {
+			if (!assignStatement.getExpr().struct.assignableTo(designatorType)) {
+				report_error("Greska: nekompatibilni tipovi pri dodjeli vrijednosti", assignStatement);
+			}
+		} else {
+			if (!arrayUsedInsteadOfVar && designatorType.getElemType() != null)
+				designatorType = designatorType.getElemType();
+			if (arrayUsedInsteadOfVar)
+				report_error("Greska: nedozvoljena dodjela vrijednosti nizu " + 
+						assignStatement.getDesignator().obj.getName(), assignStatement);
+			if (!arrayUsedInsteadOfVar && !assignStatement.getExpr().struct.assignableTo(designatorType)) {
+				report_error("Greska: nekompatibilni tipovi pri dodjeli vrijednosti", assignStatement);
+			}
 		}
+		newArrayCreation = false;
 	}
 	
+	public void visit(IncrementStatement incrementStatement) {
+		Struct designatorType = incrementStatement.getDesignator().obj.getType();
+		if (!arrayUsedInsteadOfVar && designatorType.getElemType() != null)
+			designatorType = designatorType.getElemType();
+		if (arrayUsedInsteadOfVar)
+			report_error("Greska: nedozvoljeno inkrementiranje niza " + 
+					incrementStatement.getDesignator().obj.getName(), incrementStatement);
+		if (!arrayUsedInsteadOfVar && designatorType != MyTab.intType) 
+			report_error("Greska: ime " + incrementStatement.getDesignator().obj.getName() + 
+					" nije tipa int pri operatoru ++", incrementStatement);
+	}
 	
+	public void visit(DecrementStatement decrementStatement) {
+		Struct designatorType = decrementStatement.getDesignator().obj.getType();
+		if (!arrayUsedInsteadOfVar && designatorType.getElemType() != null)
+			designatorType = designatorType.getElemType();
+		if (arrayUsedInsteadOfVar)
+			report_error("Greska: nedozvoljeno dekrementiranje niza " + 
+					decrementStatement.getDesignator().obj.getName(), decrementStatement);
+		if (!arrayUsedInsteadOfVar && designatorType != MyTab.intType)  
+			report_error("Greska: ime " + decrementStatement.getDesignator().obj.getName() + 
+					" nije tipa int pri operatoru --", decrementStatement);
+	}
 	
+	public void visit(ReadStatement readStatement) {
+		Struct designatorType = readStatement.getDesignator().obj.getType();
+		if (!arrayUsedInsteadOfVar && designatorType.getElemType() != null)
+			designatorType = designatorType.getElemType();
+		if (arrayUsedInsteadOfVar)
+			report_error("Greska: nedozvoljena upotreba niza " + 
+					readStatement.getDesignator().obj.getName() + " pri read iskazu", readStatement);
+		if (!arrayUsedInsteadOfVar && designatorType != MyTab.intType && 
+				designatorType != MyTab.boolType && designatorType != MyTab.charType)
+			report_error("Greska: ime " + readStatement.getDesignator().obj.getName() + 
+					" nije dozvoljenog tipa pri read iskazu", readStatement);
+	}
 	
-	public boolean passed() { return !errorDetected; }
+    public void visit(PrintStatement printStatement) {
+		printCallCount++;
+		Struct type = printStatement.getExpr().struct;
+		if (type != MyTab.intType && type != MyTab.boolType && type != MyTab.charType)
+			report_error("Greska: izraz nije dozvoljenog tipa pri print iskazu", printStatement);
+	}
+    
+    public void visit(FindAnyStatement findAnyStatement) {
+    	if (findAnyStatement.getDesignator().obj.getType() != MyTab.boolType)
+    		report_error("Greska kod findAny iskaza: ime sa lijeve strane znaka = nije tipa bool", findAnyStatement);
+    	
+    	int kind = findAnyStatement.getDesignator1().obj.getType().getKind();
+    	Struct elemType = findAnyStatement.getDesignator1().obj.getType().getElemType();
+    	if (kind != Struct.Array && elemType != MyTab.intType && elemType != MyTab.boolType && elemType != MyTab.charType)
+    		report_error("Greska kod findAny iskaza: ime sa desne strane znaka = nije niz ugradjenog tipa", findAnyStatement);
+    	
+    	if (!elemType.equals(findAnyStatement.getExpr().struct))
+    		report_error("Greska kod findAny iskaza: tip izraza koji se trazi se ne poklapa sa tipom elemenata niza", findAnyStatement);
+    }
+	
+	public void visit(DesignatorVar designatorVar) {
+    	Obj obj = MyTab.find(designatorVar.getVar());
+    	if (obj == MyTab.noObj)
+			report_error("Greska na liniji " + designatorVar.getLine()+ ": ime " + designatorVar.getVar() + " nije deklarisano! ", null);
+    	if (obj.getType().getKind() == Struct.Array)
+    		arrayUsedInsteadOfVar = true;
+    	else
+    		arrayUsedInsteadOfVar = false;
+    	
+    	designatorVar.obj = obj;
+    }
+	
+	public void visit(DesignatorArray designatorArray) {
+		Obj obj = MyTab.find(designatorArray.getVar());
+		if (obj == MyTab.noObj)
+			report_error("Greska na liniji " + designatorArray.getLine()+ ": ime " + designatorArray.getVar() + " nije deklarisano! ", null);
+			
+		if (designatorArray.getExpr().struct != MyTab.intType)
+			report_error("Greska: izraz za indeksiranje niza '" + designatorArray.getVar() + "' nije tipa int", designatorArray);
+		
+		designatorArray.obj = obj;
+		arrayUsedInsteadOfVar = false;
+	}
 }

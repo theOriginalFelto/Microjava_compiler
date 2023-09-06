@@ -5,7 +5,7 @@ program MJProgram
 	bool is, isnt;
 	bool arr[];
 	const int negint = -3, posint = 3;
-	const bool garg = false;
+	const bool garg = true;
 	const char vm = 'a', vn = 'b';
 	bool end;
 {
@@ -16,6 +16,11 @@ program MJProgram
 	}
 	
 	void main() {
+		a = new int[5];
+		a[1]++;
+		a[1]--;
+		a[4] = 0;
+		is = arr.findAny(true);
 		y = 2;
 		x = y + 2;
 		y = x + 3;
