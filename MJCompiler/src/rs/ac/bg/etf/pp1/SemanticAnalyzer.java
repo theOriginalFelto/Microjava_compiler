@@ -110,7 +110,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		arrayDecl.struct = new Struct(Struct.Array, arrayDecl.getType().struct);
 		report_info("Desklarisan niz '" + arrayDecl.getVarName() + 
 				"' tipa " + arrayDecl.getType().getTypeName(), arrayDecl);
-		Obj arrNode = MyTab.insert(Obj.Var, arrayDecl.getVarName(), arrayDecl.struct);
+		Obj arrNode = MyTab.insert(Obj.Elem, arrayDecl.getVarName(), arrayDecl.struct);
 	}
     
     public void visit(MultVarDecl multVarDecl) {
@@ -141,7 +141,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     	multArrDecl.struct = new Struct(Struct.Array, currentDeclaredType.struct);
     	report_info("Desklarisan niz '" + multArrDecl.getVarName() + 
     			"' tipa " + currentDeclaredType.getTypeName(), multArrDecl);
-    	Obj arrNode = MyTab.insert(Obj.Var, multArrDecl.getVarName(), multArrDecl.struct);
+    	Obj arrNode = MyTab.insert(Obj.Elem, multArrDecl.getVarName(), multArrDecl.struct);
     }
     
     public void visit(Type type) {
@@ -178,6 +178,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     		constNode.setAdr(charConstValue);
     	else
     		constNode.setAdr(boolConstValue);
+    	constNode.setLevel(0);
     }
     
     public void visit(ConstDeclaration constDeclaration) {
@@ -200,6 +201,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     		constNode.setAdr(charConstValue);
     	else
     		constNode.setAdr(boolConstValue);
+    	constNode.setLevel(0);
     }
     
     public void visit(MethodVoidTypeDecl methodVoidTypeDecl) {

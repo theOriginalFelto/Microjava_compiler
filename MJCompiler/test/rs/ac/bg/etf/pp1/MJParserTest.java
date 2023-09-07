@@ -2,6 +2,7 @@ package rs.ac.bg.etf.pp1;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -13,6 +14,7 @@ import org.apache.log4j.xml.DOMConfigurator;
 
 import rs.ac.bg.etf.pp1.ast.Program;
 import rs.ac.bg.etf.pp1.util.Log4JUtils;
+import rs.etf.pp1.mj.runtime.Code;
 
 public class MJParserTest {
 
@@ -46,14 +48,24 @@ public class MJParserTest {
 			SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer();
 			prog.traverseBottomUp(semanticAnalyzer); 
 	      
-//			log.info(" Print count calls = " + v.printCallCount);
-//
-//			log.info(" Deklarisanih promenljivih ima = " + v.varDeclarationCount);
+			log.info(" Print count calls = " + semanticAnalyzer.printCallCount);
+
+			log.info(" Declared variables = " + semanticAnalyzer.varDeclarationCount);
 			log.info("=========================================");
 			MyTab.dump();
 			
 			if (!p.errorDetected && semanticAnalyzer.passed()) {
 				log.info("Parsiranje uspjesno zavrseno!");
+				
+				File objFile = new File("test/program.obj");
+				if (objFile.exists())
+					objFile.delete();
+				
+				CodeGenerator codeGenerator = new CodeGenerator();
+				prog.traverseBottomUp(codeGenerator);
+				Code.dataSize = semanticAnalyzer.numberOfVars;
+				Code.mainPc = codeGenerator.getMainPc();
+				Code.write(new FileOutputStream(objFile));
 			} else {
 				if (!semanticAnalyzer.mainMethodFound)
 					log.error("Parsiranje NIJE uspjesno zavrseno! Ne postoji main metoda.");
