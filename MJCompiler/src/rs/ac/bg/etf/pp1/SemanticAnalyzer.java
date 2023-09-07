@@ -6,8 +6,7 @@ import rs.ac.bg.etf.pp1.ast.*;
 import rs.etf.pp1.symboltable.concepts.*;
 
 public class SemanticAnalyzer extends VisitorAdaptor {
-	int printCallCount = 0;
-	int varDeclarationCount = 0;
+	int printCallCount = 0, varDeclarationCount = 0;
 	int errorsDetected = 0;
 	boolean returnFound = false, mainMethodFound = false;
 	boolean newArrayCreation = false, arrayUsedInsteadOfVar = false;
@@ -75,7 +74,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     	multipleArrayDecl.struct = multipleArrayDecl.getVarDecl().struct;
     }
 
-	public void visit(VarDeclaration varDeclaration){
+	public void visit(VarDeclaration varDeclaration) {
 		varDeclarationCount++;
 		currentDeclaredType = varDeclaration.getType();
 		
@@ -91,11 +90,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		report_info("Desklarisana promjenljiva '" + varDeclaration.getVarName() + 
 				"' tipa " + varDeclaration.getType().getTypeName(), varDeclaration);
-		Obj varNode = MyTab.insert(Obj.Var, varDeclaration.getVarName(), varDeclaration.getType().struct);
+		MyTab.insert(Obj.Var, varDeclaration.getVarName(), varDeclaration.getType().struct);
+//		Obj varNode = MyTab.insert(Obj.Var, varDeclaration.getVarName(), varDeclaration.getType().struct);
 		varDeclaration.struct = varDeclaration.getType().struct;
 	}
 	
 	public void visit(ArrayDecl arrayDecl) {
+		varDeclarationCount++;
 		currentDeclaredType = arrayDecl.getType();
 		
 		if (symbolExistsInCurrentScope(arrayDecl.getVarName(), arrayDecl.getLine()))
@@ -110,10 +111,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		arrayDecl.struct = new Struct(Struct.Array, arrayDecl.getType().struct);
 		report_info("Desklarisan niz '" + arrayDecl.getVarName() + 
 				"' tipa " + arrayDecl.getType().getTypeName(), arrayDecl);
-		Obj arrNode = MyTab.insert(Obj.Elem, arrayDecl.getVarName(), arrayDecl.struct);
+		MyTab.insert(Obj.Elem, arrayDecl.getVarName(), arrayDecl.struct);
+//		Obj arrNode = MyTab.insert(Obj.Elem, arrayDecl.getVarName(), arrayDecl.struct);
 	}
     
     public void visit(MultVarDecl multVarDecl) {
+		varDeclarationCount++;
     	if (symbolExistsInCurrentScope(multVarDecl.getVarName(), multVarDecl.getLine()))
 			return;
     	if (currentDeclaredType.struct == MyTab.noType) {
@@ -125,10 +128,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		report_info("Desklarisana promjenljiva '" + multVarDecl.getVarName() + 
 				"' tipa " + currentDeclaredType.getTypeName(), multVarDecl);
-		Obj arrNode = MyTab.insert(Obj.Var, multVarDecl.getVarName(), currentDeclaredType.struct);
+		MyTab.insert(Obj.Var, multVarDecl.getVarName(), currentDeclaredType.struct);
+//		Obj arrNode = MyTab.insert(Obj.Var, multVarDecl.getVarName(), currentDeclaredType.struct);
     }
     
     public void visit(MultArrDecl multArrDecl) {
+		varDeclarationCount++;
     	if (symbolExistsInCurrentScope(multArrDecl.getVarName(), multArrDecl.getLine()))
     		return;
     	if (currentDeclaredType.struct == MyTab.noType) {
@@ -141,7 +146,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     	multArrDecl.struct = new Struct(Struct.Array, currentDeclaredType.struct);
     	report_info("Desklarisan niz '" + multArrDecl.getVarName() + 
     			"' tipa " + currentDeclaredType.getTypeName(), multArrDecl);
-    	Obj arrNode = MyTab.insert(Obj.Elem, multArrDecl.getVarName(), multArrDecl.struct);
+    	MyTab.insert(Obj.Elem, multArrDecl.getVarName(), multArrDecl.struct);
+//    	Obj arrNode = MyTab.insert(Obj.Elem, multArrDecl.getVarName(), multArrDecl.struct);
     }
     
     public void visit(Type type) {
@@ -247,7 +253,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		report_info("Desklarisan formalni parametar '" + formalVarDecl.getVarName() + 
 				"' tipa " + formalVarDecl.getType().getTypeName() + " za metodu " + currentMethod.getName(), formalVarDecl);
-		Obj varNode = MyTab.insert(Obj.Var, formalVarDecl.getVarName(), formalVarDecl.getType().struct);
+		MyTab.insert(Obj.Var, formalVarDecl.getVarName(), formalVarDecl.getType().struct);
+//		Obj varNode = MyTab.insert(Obj.Var, formalVarDecl.getVarName(), formalVarDecl.getType().struct);
     }
     
     public void visit(FormalArrDecl formalArrDecl) {
@@ -266,7 +273,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     	
 		report_info("Desklarisan formalni parametar '" + formalArrDecl.getVarName() + 
 				"' tipa niza " + formalArrDecl.getType().getTypeName() + " za metodu " + currentMethod.getName(), formalArrDecl);
-		Obj varNode = MyTab.insert(Obj.Var, formalArrDecl.getVarName(), new Struct(Struct.Array, formalArrDecl.getType().struct));
+		MyTab.insert(Obj.Elem, formalArrDecl.getVarName(), new Struct(Struct.Array, formalArrDecl.getType().struct));
+//		Obj arrNode = MyTab.insert(Obj.Elem, formalArrDecl.getVarName(), new Struct(Struct.Array, formalArrDecl.getType().struct));
     }
 
 	public void visit(ReturnExprStatement returnExprStatement) {

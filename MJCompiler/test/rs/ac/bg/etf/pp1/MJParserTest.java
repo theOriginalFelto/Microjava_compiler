@@ -29,7 +29,7 @@ public class MJParserTest {
 		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/test301.mj");
+			File sourceCode = new File("test/program.mj");
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));
@@ -48,9 +48,8 @@ public class MJParserTest {
 			SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer();
 			prog.traverseBottomUp(semanticAnalyzer); 
 	      
-			log.info(" Print count calls = " + semanticAnalyzer.printCallCount);
-
-			log.info(" Declared variables = " + semanticAnalyzer.varDeclarationCount);
+			log.info("Print count calls: " + semanticAnalyzer.printCallCount);
+			log.info("Variables declared: " + semanticAnalyzer.varDeclarationCount);
 			log.info("=========================================");
 			MyTab.dump();
 			
