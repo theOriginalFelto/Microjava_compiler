@@ -49,12 +49,6 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	public int getMainPc() { return mainPc; }
 	
-//	public boolean isMainMethod(String methodName, Struct methodType) {
-//		if (methodType == MyTab.noType && methodName.equals("main")) 
-//			return true;
-//		return false;
-//	}
-	
 	public void storeExpr(Struct type) {
 		Code.put(Code.putstatic);
 		if (type == MyTab.intType)
@@ -72,6 +66,31 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.put2(1);
 		else
 			Code.put2(2);
+	}
+	
+	public void boolPrint() {
+		Code.loadConst(32);
+		Code.loadConst(1);
+		Code.put(Code.bprint);
+		
+		Code.loadConst(1);
+		Code.put(Code.jcc + Code.ne);
+		Code.put2(7 * printTrue.length + 3 + 3);
+		for (Obj obj : printTrue) {
+			Code.load(obj);
+			Code.loadConst(1);
+			Code.put(Code.bprint);
+		}
+		Code.put(Code.jmp); Code.put2(7 * printFalse.length + 3);
+		for (Obj obj : printFalse) {
+			Code.load(obj);
+			Code.loadConst(1);
+			Code.put(Code.bprint);
+		}
+		
+		Code.loadConst(32);
+		Code.loadConst(1);
+		Code.put(Code.bprint);
 	}
 	
 	// Visit methods
@@ -128,29 +147,6 @@ public class CodeGenerator extends VisitorAdaptor {
 		} else
 			Code.store(o);
 	}
-//	
-//	public void visit(AssignStatement assignStatement) {
-//		Obj o = assignStatement.getDesignator().obj;
-//		if (storingArrayAddress) {
-////			if (o.getLevel()==0) { // global variable 
-////	            Code.put(Code.putstatic); Code.put2(o.getAdr());
-////	        } else {
-////		        // local variable 
-////		        if (0 <= o.getAdr() && o.getAdr() <= 3) 
-////		        	Code.put(Code.store_n + o.getAdr());
-////		        else { 
-////		        	Code.put(Code.store); Code.put(o.getAdr()); 
-////		        } 
-////	        }
-//			Code.store(o);
-//		} else if (storingArrayElement) {
-//			if (o.getType().getElemType() == MyTab.intType)
-//				Code.put(Code.astore);
-//			else
-//				Code.put(Code.bastore);
-//		} else
-//			Code.store(o);
-//	}
 	
 	public void visit(IncrementStatement incrementStatement) {
 		Obj o = incrementStatement.getDesignator().obj;
@@ -194,20 +190,7 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.loadConst(1);
 			Code.put(Code.bprint);
 		} else {
-			Code.loadConst(1);
-			Code.put(Code.jcc + Code.ne);
-			Code.put2(7 * printTrue.length + 3 + 3);
-			for (Obj obj : printTrue) {
-				Code.load(obj);
-				Code.loadConst(1);
-				Code.put(Code.bprint);
-			}
-			Code.put(Code.jmp); Code.put2(7 * printFalse.length + 3);
-			for (Obj obj : printFalse) {
-				Code.load(obj);
-				Code.loadConst(1);
-				Code.put(Code.bprint);
-			}
+			boolPrint();
 		}
 	}
 	public void visit(PrintStatementNumber printStatementNumber) {
@@ -219,20 +202,7 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.loadConst(width);
 			Code.put(Code.bprint);
 		} else {
-			Code.loadConst(1);
-			Code.put(Code.jcc + Code.ne);
-			Code.put2(7 * printTrue.length + 3 + 3);
-			for (Obj obj : printTrue) {
-				Code.load(obj);
-				Code.loadConst(1);
-				Code.put(Code.bprint);
-			}
-			Code.put(Code.jmp); Code.put2(7 * printFalse.length + 3);
-			for (Obj obj : printFalse) {
-				Code.load(obj);
-				Code.loadConst(1);
-				Code.put(Code.bprint);
-			}
+			boolPrint();
 		}
 	}
 	public void visit(ReadStatement readStatement) {
@@ -256,7 +226,6 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(FindAnyStatement findAnyStatement) {
-		// TODO
 		int storeSize;
 		if (findAnyBoolVarDesignatorObj.getLevel()==0) { // global variable 
             storeSize = 3;

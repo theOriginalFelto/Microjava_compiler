@@ -25,7 +25,7 @@ program MJProgram
 		a[4] = false;
 		
 		is = false;
-		res = a.findAny(is);
+		res = a.findAny(is + 5);
 		print(res);
 	}
 }
