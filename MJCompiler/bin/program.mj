@@ -1,13 +1,13 @@
 program MJProgram
 	int x, y;
 	int a[];
-	char b; char c[];
+	char b;
 	bool is, isnt;
-	bool arr[];
-	const int negint = -3, posint = 3;
-	const bool garg = true;
-	const char vm = 'a', vn = 'b';
-	bool end;
+	//bool arr[];
+	//const int negint = -3, posint = 3;
+	//const bool garg = true;
+	//const char vm = 'a', vn = 'b';
+	//bool end;
 {
 	
 	int k () int c; {
@@ -15,18 +15,17 @@ program MJProgram
 		return c+2;
 	}
 	
-	void main() {
-		//a = new int[5];
-		//a[1]++;
-		//a[1]--;
-		//a[4] = 0;
-		//is = arr.findAny(true);
-		//y = 2;
-		//x = y + 2;
-		//y = x + 3;
-		//print(y);
-		print(1);
-		print('v');
-		print(true);
+	void main() bool res; bool a[]; {		
+		a = new bool[5];
+		y = 3 - 4 + 5;
+		a[0] = false;
+		a[1] = false;
+		a[2] = false;
+		a[3] = false;
+		a[4] = false;
+		
+		is = false;
+		res = a.findAny(is);
+		print(res);
 	}
 }

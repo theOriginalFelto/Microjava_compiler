@@ -17,6 +17,7 @@ import rs.ac.bg.etf.pp1.util.Log4JUtils;
 import rs.etf.pp1.mj.runtime.Code;
 
 public class MJParserTest {
+	public static boolean programOK = false;
 
 	static {
 		DOMConfigurator.configure(Log4JUtils.instance().findLoggerConfigFile());
@@ -29,7 +30,11 @@ public class MJParserTest {
 		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/program.mj");
+			File sourceCode = new File(args[0]);
+			File objFile = new File(args[1]);
+			if (objFile.exists())
+				objFile.delete();
+			
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));
@@ -55,10 +60,7 @@ public class MJParserTest {
 			
 			if (!p.errorDetected && semanticAnalyzer.passed()) {
 				log.info("Parsiranje uspjesno zavrseno!");
-				
-				File objFile = new File("test/program.obj");
-				if (objFile.exists())
-					objFile.delete();
+				programOK = true;
 				
 				CodeGenerator codeGenerator = new CodeGenerator();
 				prog.traverseBottomUp(codeGenerator);

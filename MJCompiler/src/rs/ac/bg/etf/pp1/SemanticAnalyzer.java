@@ -10,6 +10,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	int errorsDetected = 0;
 	boolean returnFound = false, mainMethodFound = false;
 	boolean newArrayCreation = false, arrayUsedInsteadOfVar = false;
+	boolean getArrayElemType = false;
 	int numberOfVars;
 	
 	int numberConstValue, boolConstValue;
@@ -64,6 +65,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     public void visit(ProgName progName) {
     	progName.obj = MyTab.insert(Obj.Prog, progName.getProgramName(), MyTab.noType);
     	MyTab.openScope();
+    	MyTab.insert(Obj.Var, "findAnyIntExpr", MyTab.intType);
+    	MyTab.insert(Obj.Var, "findAnyCharExpr", MyTab.charType);
+    	MyTab.insert(Obj.Var, "findAnyBoolExpr", MyTab.boolType);
     }
     
     public void visit(MultipleVarDecl multipleVarDecl) {
@@ -111,8 +115,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		arrayDecl.struct = new Struct(Struct.Array, arrayDecl.getType().struct);
 		report_info("Desklarisan niz '" + arrayDecl.getVarName() + 
 				"' tipa " + arrayDecl.getType().getTypeName(), arrayDecl);
-		MyTab.insert(Obj.Elem, arrayDecl.getVarName(), arrayDecl.struct);
-//		Obj arrNode = MyTab.insert(Obj.Elem, arrayDecl.getVarName(), arrayDecl.struct);
+		MyTab.insert(Obj.Var, arrayDecl.getVarName(), arrayDecl.struct);
+//		Obj arrNode = MyTab.insert(Obj.Var, arrayDecl.getVarName(), arrayDecl.struct);
 	}
     
     public void visit(MultVarDecl multVarDecl) {
@@ -146,8 +150,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     	multArrDecl.struct = new Struct(Struct.Array, currentDeclaredType.struct);
     	report_info("Desklarisan niz '" + multArrDecl.getVarName() + 
     			"' tipa " + currentDeclaredType.getTypeName(), multArrDecl);
-    	MyTab.insert(Obj.Elem, multArrDecl.getVarName(), multArrDecl.struct);
-//    	Obj arrNode = MyTab.insert(Obj.Elem, multArrDecl.getVarName(), multArrDecl.struct);
+    	MyTab.insert(Obj.Var, multArrDecl.getVarName(), multArrDecl.struct);
+//    	Obj arrNode = MyTab.insert(Obj.Var, multArrDecl.getVarName(), multArrDecl.struct);
     }
     
     public void visit(Type type) {
@@ -273,8 +277,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     	
 		report_info("Desklarisan formalni parametar '" + formalArrDecl.getVarName() + 
 				"' tipa niza " + formalArrDecl.getType().getTypeName() + " za metodu " + currentMethod.getName(), formalArrDecl);
-		MyTab.insert(Obj.Elem, formalArrDecl.getVarName(), new Struct(Struct.Array, formalArrDecl.getType().struct));
-//		Obj arrNode = MyTab.insert(Obj.Elem, formalArrDecl.getVarName(), new Struct(Struct.Array, formalArrDecl.getType().struct));
+		MyTab.insert(Obj.Var, formalArrDecl.getVarName(), new Struct(Struct.Array, formalArrDecl.getType().struct));
+//		Obj arrNode = MyTab.insert(Obj.Var, formalArrDecl.getVarName(), new Struct(Struct.Array, formalArrDecl.getType().struct));
     }
 
 	public void visit(ReturnExprStatement returnExprStatement) {
@@ -357,10 +361,10 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	public void visit(FactorVar factorVar) {
 		Struct designatorType = factorVar.getDesignator().obj.getType();
-		if (designatorType.getKind() == Struct.Array)
-			factorVar.struct = designatorType.getElemType();
-		else
-			factorVar.struct = designatorType;
+		if (getArrayElemType)
+			designatorType = designatorType.getElemType();
+			
+		factorVar.struct = designatorType;
 	}
 	
 	public void visit(FactorNewArray factorNewArray) {
@@ -434,10 +438,17 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
     public void visit(PrintStatement printStatement) {
 		printCallCount++;
-		Struct type = printStatement.getExpr().struct;
-		if (type != MyTab.intType && type != MyTab.boolType && type != MyTab.charType)
+		int typeKind = printStatement.getExpr().struct.getKind();
+		if (typeKind != Struct.Int && typeKind != Struct.Bool && typeKind != Struct.Char)
 			report_error("Greska: izraz nije dozvoljenog tipa pri print iskazu", printStatement);
 	}
+    
+    public void visit(PrintStatementNumber printStatementNumber) {
+    	printCallCount++;
+		int typeKind = printStatementNumber.getExpr().struct.getKind();
+		if (typeKind != Struct.Int && typeKind != Struct.Bool && typeKind != Struct.Char)
+			report_error("Greska: izraz nije dozvoljenog tipa pri print iskazu", printStatementNumber);
+    }
     
     public void visit(FindAnyStatement findAnyStatement) {
     	if (findAnyStatement.getDesignator().obj.getType() != MyTab.boolType)
@@ -456,23 +467,30 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     	Obj obj = MyTab.find(designatorVar.getVar());
     	if (obj == MyTab.noObj)
 			report_error("Greska na liniji " + designatorVar.getLine()+ ": ime " + designatorVar.getVar() + " nije deklarisano! ", null);
-    	if (obj.getType().getKind() == Struct.Array)
+    	if (obj.getType().getKind() == Struct.Array) {
+//    		report_error("Greska: nedozvoljeno koriscenje niza " + obj.getName(), designatorVar);
     		arrayUsedInsteadOfVar = true;
+    	}
     	else
     		arrayUsedInsteadOfVar = false;
     	
     	designatorVar.obj = obj;
+    	getArrayElemType = false;
     }
 	
 	public void visit(DesignatorArray designatorArray) {
 		Obj obj = MyTab.find(designatorArray.getVar());
 		if (obj == MyTab.noObj)
 			report_error("Greska na liniji " + designatorArray.getLine()+ ": ime " + designatorArray.getVar() + " nije deklarisano! ", null);
+		
+		if (obj.getType().getKind() != Struct.Array)
+			report_error("Greska: nedozvoljeno indeksiranje promjenljive umjesto niza", designatorArray);
 			
 		if (designatorArray.getExpr().struct != MyTab.intType)
 			report_error("Greska: izraz za indeksiranje niza '" + designatorArray.getVar() + "' nije tipa int", designatorArray);
 		
 		designatorArray.obj = obj;
 		arrayUsedInsteadOfVar = false;
+		getArrayElemType = true;
 	}
 }
