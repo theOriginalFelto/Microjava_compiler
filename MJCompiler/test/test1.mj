@@ -1,0 +1,31 @@
+program MJProgram
+	int , y;
+	int arrInt[];
+	char p, q;
+	char charArr[];
+	bool i, j;
+	bool boolArr[];
+	const int posint = 3;
+	const char mate = 'g';
+	const bool is = true;
+{
+	
+	int k() int c; {
+		c = 1;
+		return c+2;
+	}
+	
+	void main() bool res; bool a[]; {		
+		a = new bool[5];
+		arrInt = new int[3];
+		
+		a[0] = false;
+		a[1] = false;
+		a[2] = false;
+		a[3] = true;
+		a[4] = false;
+		
+		res = a.findAny(is);
+		print(res);
+	}
+}

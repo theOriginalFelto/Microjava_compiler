@@ -1,0 +1,33 @@
+program MJProgram
+	int x, y;
+	int arrInt[];
+	char p, q;
+	char charArr[];
+	bool i, j;
+	bool boolArr[];
+	const int posint = 3;
+	const char mate = 'g';
+	const bool is = true;
+{
+	
+	void k() int c; {
+		c = 1;
+	}
+	
+	int main() bool res; {		
+		boolArr = new bool[5];
+		arrInt = new int[3];
+		y = 3 - 4 + 5 - posint;
+		x = 5 / 3 + 10 % posint * (5 - y) -;
+		print(x);
+		print(y);
+		
+		arrInt[0] = 0;
+		arrInt[1] = 1;
+		arrInt[2] = false;
+		
+		res = a.findAny(2);
+		print(res);
+		return arrInt[1];
+	}
+}

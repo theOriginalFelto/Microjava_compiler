@@ -40,8 +40,8 @@ public class MJParserTest {
 			br = new BufferedReader(new FileReader(sourceCode));
 			Yylex lexer = new Yylex(br);
 			
-			MJParser p = new MJParser(lexer);
-	        Symbol s = p.parse();  //pocetak parsiranja
+			MJParser parser = new MJParser(lexer);
+	        Symbol s = parser.parse();  //pocetak parsiranja
 	        
 	        Program prog = (Program)(s.value);
 	        MyTab.init();
@@ -58,7 +58,7 @@ public class MJParserTest {
 			log.info("=========================================");
 			MyTab.dump();
 			
-			if (!p.errorDetected && semanticAnalyzer.passed()) {
+			if (parser.errorsDetected == 0 && semanticAnalyzer.passed()) {
 				log.info("Parsiranje uspjesno zavrseno!");
 				programOK = true;
 				
@@ -70,8 +70,10 @@ public class MJParserTest {
 			} else {
 				if (!semanticAnalyzer.mainMethodFound)
 					log.error("Parsiranje NIJE uspjesno zavrseno! Ne postoji main metoda.");
-				else
-					log.error("Parsiranje NIJE uspjesno zavrseno! Broj semantickih gresaka: " + semanticAnalyzer.errorsDetected);
+				else {
+					log.error("Parsiranje NIJE uspjesno zavrseno!" + " Broj sintaksnih gresaka: " + parser.errorsDetected +
+							". Broj semantickih gresaka: " + semanticAnalyzer.errorsDetected + ".");
+				}
 			}
 		} 
 		finally {

@@ -1,0 +1,21 @@
+program MJProgram
+	int x, y;
+	int arrInt[];
+	char p, q;
+	char charArr[];
+	bool i, j;
+	bool boolArr[];
+	const int posint = 3;
+	const char mate = 'g';
+	const bool is = true;
+{
+	
+	void main() bool res; {		
+		posint++;
+		posint--;
+		
+		x = p + q;
+		
+		print(i);
+	}
+}

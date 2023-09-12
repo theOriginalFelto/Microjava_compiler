@@ -9,7 +9,7 @@ import rs.ac.bg.etf.pp1.ast.*;
 
 parser code {:
 	
-	boolean errorDetected;
+	int errorsDetected;
 	
 	Logger log = Logger.getLogger(getClass());
    
@@ -22,6 +22,7 @@ parser code {:
     }
   
     public void syntax_error(Symbol cur_token) {
+    	errorsDetected++;
         report_error("\nSintaksna greska", cur_token);
     }
   
@@ -30,7 +31,7 @@ parser code {:
     }
 
     public void report_error(String message, Object info) {
-    	errorDetected = true;
+    	//errorsDetected++;
     	StringBuilder msg = new StringBuilder(message); 
     	if (info instanceof Symbol)
             msg.append (" na liniji ").append(((Symbol)info).left);
@@ -47,7 +48,7 @@ parser code {:
 :}
 
 init with {: 
-	errorDetected = false;
+	errorsDetected = 0;
 :}
 
 scan with {:
@@ -163,10 +164,7 @@ StatementList ::= (Statements) StatementList Statement
 				  (NoStmt) /* epsilon */
 				  ;
 
-Statement ::= (DesigStatement) DesignatorStatement SEMI 
-			  |
-			  (ErrorStatement) error SEMI:safe
-			  {: parser.report_error("Greska kod iskaza dodjele. Izvrsen oporavak do ; u liniji " + safeleft, null); :}
+Statement ::= (DesigStatement) DesignatorStatement 
 			  |
 			  (PrintStatement) PRINT LPAREN Expr RPAREN SEMI 
 			  |
@@ -181,11 +179,14 @@ Statement ::= (DesigStatement) DesignatorStatement SEMI
 			  (FindAnyStatement) Designator:boolVar EQUAL Designator:array DOT FINDANY LPAREN Expr:expr RPAREN SEMI
 			  ;
 			  
-DesignatorStatement ::= (AssignStatement) Designator:lvalue EQUAL Expr:rvalue
+DesignatorStatement ::= (AssignStatement) Designator:lvalue EQUAL Expr:rvalue SEMI
 						|
-						(IncrementStatement) Designator:lvalue PLUSPLUS
+						(ErrorStatement) error SEMI:safe
+						{: parser.report_error("Greska kod iskaza dodjele. Izvrsen oporavak do ; u liniji " + safeleft, null); :}
 						|
-						(DecrementStatement) Designator:lvalue MINUSMINUS
+						(IncrementStatement) Designator:lvalue PLUSPLUS SEMI
+						|
+						(DecrementStatement) Designator:lvalue MINUSMINUS SEMI
 //						|
 //						(FuntionCall) Designator:function LPAREN ActualPars RPAREN SEMI
 						;

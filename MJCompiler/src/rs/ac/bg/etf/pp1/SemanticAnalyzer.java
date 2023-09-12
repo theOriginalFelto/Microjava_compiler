@@ -42,13 +42,17 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	public boolean symbolExistsInCurrentScope(String symbolName, int line) {
+		if (MyTab.find(symbolName).getKind() == Obj.Type) {
+			report_error("Greska na liniji " + line + ": ime promjenljive ne smije biti predefinisani tip!", null);
+			return true;
+		}
 		if (MyTab.find(symbolName) == MyTab.noObj)
 			return false;
 		if (MyTab.currentScope.findSymbol(symbolName) == null)
 			return false;
 		report_error("Semanticka greska na liniji " + line + ": simbol " + symbolName + 
 				" je vec definisan!", null);
-		return false;
+		return true;
 	}
 	
 	public boolean isMainMethod() {
@@ -215,6 +219,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     }
     
     public void visit(MethodVoidTypeDecl methodVoidTypeDecl) {
+    	if (MyTab.find(methodVoidTypeDecl.getMethName()) != MyTab.noObj) {
+    		report_error("Greska na liniji " + methodVoidTypeDecl.getLine() + ": metoda " + 
+    				methodVoidTypeDecl.getMethName() + " ne moze biti deklarisana jer to ime vec postoji", null);
+    		return;
+    	}
+    		
     	currentMethod = MyTab.insert(Obj.Meth, methodVoidTypeDecl.getMethName(), MyTab.noType);
     	methodVoidTypeDecl.obj = currentMethod;
     	MyTab.openScope();
@@ -222,6 +232,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     }
     
     public void visit(MethodTypeDecl methodTypeDecl) {
+    	if (MyTab.find(methodTypeDecl.getMethName()) != MyTab.noObj) {
+    		report_error("Greska na liniji " + methodTypeDecl.getLine() + ": metoda " + 
+    				methodTypeDecl.getMethName() + " ne moze biti deklarisana jer to ime vec postoji", null);
+    		return;
+    	}
+    		
     	currentMethod = MyTab.insert(Obj.Meth, methodTypeDecl.getMethName(), methodTypeDecl.getType().struct);
     	methodTypeDecl.obj = currentMethod;
     	MyTab.openScope();
@@ -382,6 +398,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	public void visit(AssignStatement assignStatement) {
 		Struct designatorType = assignStatement.getDesignator().obj.getType();
+		if (assignStatement.getDesignator().obj.getKind() == Obj.Con) {
+			report_error("Semanticka greska: nedozvoljena dodjela vrijenosti konstanti", assignStatement);
+			return;
+		}
+		
 		if (newArrayCreation) {
 			if (!assignStatement.getExpr().struct.assignableTo(designatorType)) {
 				report_error("Greska: nekompatibilni tipovi pri dodjeli vrijednosti", assignStatement);
@@ -401,6 +422,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	public void visit(IncrementStatement incrementStatement) {
 		Struct designatorType = incrementStatement.getDesignator().obj.getType();
+		if (incrementStatement.getDesignator().obj.getKind() == Obj.Con) {
+			report_error("Semanticka greska: nedozvoljeno inkrementiranje konstante", incrementStatement);
+			return;
+		}
+		
 		if (!arrayUsedInsteadOfVar && designatorType.getElemType() != null)
 			designatorType = designatorType.getElemType();
 		if (arrayUsedInsteadOfVar)
@@ -413,6 +439,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	public void visit(DecrementStatement decrementStatement) {
 		Struct designatorType = decrementStatement.getDesignator().obj.getType();
+		if (decrementStatement.getDesignator().obj.getKind() == Obj.Con) {
+			report_error("Semanticka greska: nedozvoljeno dekrementiranje konstante", decrementStatement);
+			return;
+		}
+		
 		if (!arrayUsedInsteadOfVar && designatorType.getElemType() != null)
 			designatorType = designatorType.getElemType();
 		if (arrayUsedInsteadOfVar)
@@ -425,6 +456,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	public void visit(ReadStatement readStatement) {
 		Struct designatorType = readStatement.getDesignator().obj.getType();
+		if (readStatement.getDesignator().obj.getKind() == Obj.Con) {
+			report_error("Semanticka greska: nedozvoljeno ucitavanje vrijenosti u konstantu", readStatement);
+			return;
+		}
+		
 		if (!arrayUsedInsteadOfVar && designatorType.getElemType() != null)
 			designatorType = designatorType.getElemType();
 		if (arrayUsedInsteadOfVar)
@@ -451,6 +487,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
     }
     
     public void visit(FindAnyStatement findAnyStatement) {
+		if (findAnyStatement.getDesignator().obj.getKind() == Obj.Con) {
+			report_error("Semanticka greska: nedozvoljena dodjela vrijenosti konstanti", findAnyStatement);
+			return;
+		}
+		
     	if (findAnyStatement.getDesignator().obj.getType() != MyTab.boolType)
     		report_error("Greska kod findAny iskaza: ime sa lijeve strane znaka = nije tipa bool", findAnyStatement);
     	
